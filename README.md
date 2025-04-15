@@ -32,7 +32,7 @@ cloud_id: <you_cloud_id>
 folder_id: <you_folder_id>  
 zone: Ваша зона по умолчанию
 
-Для дальнейшей работы с терраформ в РФ установим зеркало  
+Для дальнейшей работы с терраформ в yandex.cloud установим зеркало  
 ```bash
 nano ~/.terraformrc  
 ```
@@ -63,11 +63,13 @@ cat /root/.ssh/id_rsa.pub
 terraform plan  
 terraform apply  
 ```
-После окончания деплоя будут выведены в консоль внешние ip адреса виртуальных машин, а также эти данные появятся в файле dip/ansible/inventory.nano  
+После окончания деплоя будут выведены в консоль внешние ip адреса виртуальных машин,  
+а также эти данные появятся в файле dip/ansible/inventory.nano  
 
 ![image](https://github.com/user-attachments/assets/52be9126-614b-4c15-8a48-401cd06f0a21)  
 
 На данном этапе мы развернём 3 виртуальные машины  
+
 k8s-master  
 k8s-app  
 srv  
@@ -78,21 +80,25 @@ srv
 Для присоеденения k8s-app в k8s-master необходимо указать ip k8s-master в файле dip/ansible/k8s.yml в строках  
 
 wait_for: "host=<k8s-master ip> port=6443 timeout=1"  
+
 shell: "{{ hostvars['<k8s-master ip>'].join_command }} >> node_joined.log"  
 
 В случае если понадобится редеплой, воспользуйтесь скриптом  
+
 dip/terraform/redeploy.sh  
 chmod +x redeploy.sh  
 ./redeploy.sh  
 
 Далее переходим в dip/ansible/  
 Проверим доступность хостов командой  
-ansible all -i inventory.ini -m ping  
+```bash
+ansible all -i inventory.ini -m ping
+```
 
 ![image](https://github.com/user-attachments/assets/4127c234-aa6f-4680-98e9-d8530ee142cd)  
 
 Далее поочерёдно запускаем командой  
-ansible-playbook -i inventory.ini <my_yml>.yml  
+ansible-playbook -i inventory.ini <ansible_playbook>.yml  
 
 Следующие плэйбуки  
 
@@ -145,7 +151,7 @@ kubectl create secret docker-registry regcred \
 
 Конфигурируем gitlab на внешний ip srv  
 ```bash
-sudo sed -i "s|^external_url .*|external_url 'http://51.250.81.129'|" /etc/gitlab/gitlab.rb  
+sudo sed -i "s|^external_url .*|external_url 'http://<ip_srv>'|" /etc/gitlab/gitlab.rb  
 sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-ctl status  
 ```
 При первой настройке пароль от GitLab можно посмотреть вот тут:  
@@ -163,20 +169,20 @@ cd django-pg-docker-tutorial
 ```
 Удаляем старую привязку к GitHub (опционально)  
 git remote remove origin  
-git remote add origin http:/<srv_ip>/путь до проекта/django-pg-docker-tutorial.git  
-Вводим лог/пас от пароля GitLab  
+git remote add origin http:/<srv_ip>/путь_до_проекта/django-pg-docker-tutorial.git  
+Вводим лог/пас от GitLab  
 git push --all origin  
 git push --tags origin  
 
 ## Шаг 5 Настраиваем GitLab-runner
 
-Зарегестрируем наш runner в GitLab  
+Зарегестрируем наш runner в на srv в GitLab
 ```bash
 sudo gitlab-runner register  
 ```
-http://<srv_ip>  
+http://<ip_srv>  
 Вводи токен регистрации Ранера   
-(Токен можно получить в GitLab Admin area > CI/CD > Runners > три точки в правом углу)  
+(Токен можно получить в GitLab / Admin area > CI/CD > Runners > три точки в правом углу)  
 Даём название нашему ранеру my_run  
 Enter  
 shell  
@@ -201,17 +207,16 @@ sudo cp /root/.kube/config /home/gitlab-runner/.kube/config
 sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.kube/config  
 sudo chmod 644 /home/gitlab-runner/.kube/config  
 ```
-Настраиваем переменные в GitLab  
+Настраиваем переменные в GitLab для логина в docker-hub   
+Settings > CI/CD > Variables 
 
-Далее настраиваю переменные в ГИТЛАБ для логина в Docker HUB  
-DOCKER_PASSWORD - пароль на докерхаб  
-DOCKER_USER - логин в докерхаб  
-Settings > CI/CD > Variables  
+DOCKER_PASSWORD - пароль на docker-hub  
+DOCKER_USER - логин в docker-hub  
+
 
 ![image](https://github.com/user-attachments/assets/0ac36564-ddcf-4fce-b01e-c3ea4a147e0c)  
 
-
-Перезапускаем докер и гитлаб  
+Перезапускаем docker и gitlab-runner
 ```bash
 sudo systemctl restart docker  
 sudo gitlab-runner restart  
@@ -222,11 +227,8 @@ Admin area > CI/CD > Runner
 
 ## Шаг 6 запуск Pipline
 
-Перенесите в корень проекта GitLab  
+Переносим в корень проекта GitLab наш pipeline из проекта https://github.com/RE5CUER/devops-57.git  
 .gitlab-ci.yml  
-
-Из проекта   
-https://github.com/RE5CUER/devops-57.git  
 
 Далее переходим к запуску pipeline  
 project > Build > Pipeline > Run pipeline  
@@ -242,10 +244,12 @@ project > Build > Pipeline > Run pipeline
 ![image](https://github.com/user-attachments/assets/3e6d2259-c9af-4162-a96c-71e39429b2d7)  
 
 Проверим на srv созданые поды на кластере:  
-kubectl get pods  
+```bash
+kubectl get pods
+```
 ![image](https://github.com/user-attachments/assets/6d6c6baa-3b90-4db3-9b68-22036b0a97d8)  
 
-Перейдём на адрес приложения:  
+Перейдём на адрес приложения развёрнутого на кластере Kubernetis:  
 
 k8s-master  
 http://89.169.136.108:30100/  
