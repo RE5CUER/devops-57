@@ -211,6 +211,42 @@ sudo gitlab-runner restart
 Admin area > CI/CD > Runner
 ![image](https://github.com/user-attachments/assets/9a341d89-b126-4e30-9644-f38b94bc4d22)
 
+## Шаг 6 запуск Pipline
+
+Перенесите в корень проекта GitLab
+.gitlab-ci.yml
+
+Из проекта 
+https://github.com/RE5CUER/devops-57.git
+
+Далее переходим к запуску pipeline
+project > Build > Pipeline > Run pipeline
+
+Проверяем
+
+Работа pipline в GitLab:
+![image](https://github.com/user-attachments/assets/0c33325a-d072-4825-b254-5b2ad1b87f4b)
+![image](https://github.com/user-attachments/assets/dd093a18-9397-4494-bc7b-9811d88dda72)
+
+Загрузка образа на docker-hub:
+![image](https://github.com/user-attachments/assets/3e6d2259-c9af-4162-a96c-71e39429b2d7)
+
+Проверим на srv созданые поды на кластере:
+kubectl get pods
+![image](https://github.com/user-attachments/assets/6d6c6baa-3b90-4db3-9b68-22036b0a97d8)
+
+Перейдём на адрес приложения:
+
+k8s-master
+http://89.169.136.108:30100/
+![image](https://github.com/user-attachments/assets/aaeddf2d-9fc3-463a-9b82-fc123cdf0c7f)
+
+k8s-app
+http://89.169.136.91:30100/
+![image](https://github.com/user-attachments/assets/ea986c66-852f-4963-8881-4fe0e188d8d0)
+
+
+
 
 
 
