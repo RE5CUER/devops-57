@@ -27,9 +27,9 @@ cat ~/.config/yandex-cloud/config.yaml
 
 Где:
 
-oauth_token: <you_token>
-cloud_id: <you_cloud_id>
-folder_id: <you_folder_id>
+oauth_token: <you_token>  
+cloud_id: <you_cloud_id>  
+folder_id: <you_folder_id>  
 zone: Ваша зона по умолчанию
 
 Для дальнейшей работы с терраформ в РФ установим зеркало
