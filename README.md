@@ -3,27 +3,27 @@ Homework
 
 ## Шаг 1 Подготовка управляющей ноды
 
-Установим тераформ
-Terraform v1.11.3
-Скачиваем архив с официального сайта
-https://developer.hashicorp.com/terraform/install
+Установим тераформ  
+Terraform v1.11.3  
+Скачиваем архив с официального сайта  
+https://developer.hashicorp.com/terraform/install  
 
-Установим через пакет ансибл
-ansible [core 2.16.3]
+Установим через пакет ансибл  
+ansible [core 2.16.3]  
 
-Для работы с terraform понадобится создать токен авторизации в yandex.cloud
+Для работы с terraform понадобится создать токен авторизации в yandex.cloud  
 
-Установим Yandex Cloud CLI
-curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-yc init
+Установим Yandex Cloud CLI  
+curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash  
+yc init  
 
-Авторизоваться через браузер по представленной ссылке
-Выбрать каталог (folder) и облако (cloud).
-Установить зону доступности по умолчанию (например, ru-central1-a).
+Авторизоваться через браузер по представленной ссылке  
+Выбрать каталог (folder) и облако (cloud).  
+Установить зону доступности по умолчанию (например, ru-central1-a).  
 
-После авторизации получим данные для провайдера терраформ по команде
+После авторизации получим данные для провайдера терраформ по команде  
 
-cat ~/.config/yandex-cloud/config.yaml
+cat ~/.config/yandex-cloud/config.yaml  
 
 Где:
 
@@ -32,9 +32,9 @@ cloud_id: <you_cloud_id>
 folder_id: <you_folder_id>  
 zone: Ваша зона по умолчанию
 
-Для дальнейшей работы с терраформ в РФ установим зеркало
+Для дальнейшей работы с терраформ в РФ установим зеркало  
 
-nano ~/.terraformrc
+nano ~/.terraformrc  
 
 provider_installation {
   network_mirror {
@@ -46,9 +46,9 @@ provider_installation {
   }
 }
 
-Создадим ssh ключ для работы с ансибл
+Создадим ssh ключ для работы с ансибл  
 
-ssh-keygen -t rsa -b 4096 -f /root/.ssh/id_rsa
+ssh-keygen -t rsa -b 4096 -f /root/.ssh/id_rsa  
 cat /root/.ssh/id_rsa.pub
 
 
