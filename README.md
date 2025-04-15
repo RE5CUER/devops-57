@@ -16,6 +16,7 @@ ansible [core 2.16.3]
 Установим Yandex Cloud CLI
 curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
 yc init
+
 Авторизоваться через браузер (выдаст ссылку — открой её и подтверди).
 Выбрать каталог (folder) и облако (cloud).
 Установить зону доступности по умолчанию (например, ru-central1-a).
