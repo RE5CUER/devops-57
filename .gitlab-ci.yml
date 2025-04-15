@@ -1,0 +1,31 @@
+stages:
+  - build
+  - push
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: "docker.io"
+  DOCKER_IMAGE: "$DOCKER_USER/django-pg-docker-tutorial"
+  IMAGE_TAG: "$CI_COMMIT_SHA"
+  IMAGE_LATEST_TAG: "latest"
+
+before_script:
+   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+
+build:
+  stage: build
+  script:
+    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_SHA .
+    - docker tag $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:$IMAGE_LATEST_TAG
+
+push:
+  stage: push
+  script:
+    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHA
+    - docker push $DOCKER_IMAGE:$IMAGE_LATEST_TAG
+
+deploy:
+  stage: deploy
+  script:
+    - helm uninstall app || true 
+    - helm install app /helm/deploy-app
