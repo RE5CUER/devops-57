@@ -103,4 +103,70 @@ ci.yml
 monitoring.yml
 Развёртывание инструментов мониторинга
 
+## Шаг 3 Настройка подключения к кластеру и Docker Registry
+
+Настройка доступа к Kubernetes-кластеру для srv
+
+Подключаемся к k8s-master
+ssh ubuntu@<k8s-master_ip>
+
+Вывводим данные для подключения к кластеру
+cat ~/.kube/config
+
+Содержимое переносим на srv
+Подключаемся к srv
+ssh ubuntu@<srv>
+
+mkdir -p ~/.kube
+nano ~/.kube/config
+
+проверим
+
+kubectl get nodes
+
+В качестве докер регистра я выбрал docker-hub
+Для этого необходимо зарегестрироваться в docker-hub и создать секрет
+
+создаём секрет для авторизации на docker-hub
+
+kubectl create secret docker-registry regcred \
+  --docker-server=https://hub.docker.com/ \
+  --docker-username=<you_docker-hub_login> \
+  --docker-password=<you_dockerhub_password> \
+  --docker-email=<you_email>
+
+## Шаг 4 Настройка GitLab
+
+Конфигурируем gitlab на внешний ip srv
+
+sudo sed -i "s|^external_url .*|external_url 'http://51.250.81.129'|" /etc/gitlab/gitlab.rb
+sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-ctl status
+
+При первой настройке пароль от GitLab можно посмотреть вот тут:
+sudo nano /etc/gitlab/initial_root_password
+
+Авторизуемся под root, при желании меняем пароль на свой
+
+Клонируем репозиторий с django приложением к себе в гитлаб
+
+cd /папка для проекта
+git clone https://github.com/vinhlee95/django-pg-docker-tutorial.git
+cd django-pg-docker-tutorial
+# Удаляем старую привязку к GitHub (опционально)
+git remote remove origin
+git remote add origin http:/<srv_ip>/путь до проекта/django-pg-docker-tutorial.git
+Вводим лог/пас от пароля GitLab
+git push --all origin
+git push --tags origin
+
+## Шаг 5 Настраиваем GitLab-runner
+
+
+
+
+
+
+  
+
+
 
