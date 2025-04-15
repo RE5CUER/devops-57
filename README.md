@@ -68,6 +68,7 @@ terraform apply
 k8s-master  
 k8s-app  
 srv  
+
 ![image](https://github.com/user-attachments/assets/8c233d30-ee79-427b-97c4-4e88314703e2)  
 
 # Внимание!
@@ -227,6 +228,7 @@ project > Build > Pipeline > Run pipeline
 
 Работа pipline в GitLab:  
 ![image](https://github.com/user-attachments/assets/0c33325a-d072-4825-b254-5b2ad1b87f4b)  
+
 ![image](https://github.com/user-attachments/assets/dd093a18-9397-4494-bc7b-9811d88dda72)  
 
 Загрузка образа на docker-hub:  
