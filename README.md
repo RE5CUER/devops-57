@@ -152,7 +152,7 @@ sudo nano /etc/gitlab/initial_root_password
 cd /папка для проекта
 git clone https://github.com/vinhlee95/django-pg-docker-tutorial.git
 cd django-pg-docker-tutorial
-# Удаляем старую привязку к GitHub (опционально)
+Удаляем старую привязку к GitHub (опционально)
 git remote remove origin
 git remote add origin http:/<srv_ip>/путь до проекта/django-pg-docker-tutorial.git
 Вводим лог/пас от пароля GitLab
@@ -160,6 +160,57 @@ git push --all origin
 git push --tags origin
 
 ## Шаг 5 Настраиваем GitLab-runner
+
+Зарегестрируем наш runner в GitLab
+
+sudo gitlab-runner register
+
+http://<srv_ip>
+Вводи токен регистрации Ранера 
+(Токен можно получить в GitLab Admin area > CI/CD > Runners > три точки в правом углу)
+Даём название нашему ранеру my_run
+Enter
+shell
+shell
+
+Проверяем конфигурационный файл
+
+sudo cat /etc/gitlab-runner/config.toml
+
+Запускаем ранер
+sudo gitlab-runner start
+
+Назначаем права для работы c GitLab
+
+usermod -aG docker ubuntu
+usermod -aG docker root
+usermod -aG docker gitlab-runner
+
+Скопируем конфигурации кластера в gitlab-runner
+
+sudo cp /root/.kube/config /home/gitlab-runner/.kube/config
+sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.kube/config
+sudo chmod 644 /home/gitlab-runner/.kube/config
+
+Настраиваем переменные в GitLab
+
+Далее настраиваю переменные в ГИТЛАБ для логина в Docker HUB 
+DOCKER_PASSWORD - пароль на докерхаб
+DOCKER_USER - логин в докерхаб
+Settings > CI/CD > Variables
+
+![image](https://github.com/user-attachments/assets/0ac36564-ddcf-4fce-b01e-c3ea4a147e0c)
+
+
+Перезапускаем докер и гитлаб
+
+sudo systemctl restart docker
+sudo gitlab-runner restart
+
+Проверяем подключение gitlab-runner
+Admin area > CI/CD > Runner
+![image](https://github.com/user-attachments/assets/9a341d89-b126-4e30-9644-f38b94bc4d22)
+
 
 
 
