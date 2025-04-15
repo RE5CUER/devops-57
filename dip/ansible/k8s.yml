@@ -1,0 +1,245 @@
+---
+- name: Устанавливаю кластер Kubernetes
+  hosts: k8s-master,k8s-app
+  become: yes
+  tasks:
+    - name: Обновления
+      apt:
+        update_cache: yes
+
+    - name: Перезагрузка
+      reboot:
+
+    - name: Отключение SWAP
+      shell: |
+        swapoff -a
+
+    - name: Отключение SWAP в fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    - name: Создание пустого файла для модуля containerd
+      copy:
+        content: ""
+        dest: /etc/modules-load.d/containerd.conf
+        force: no
+
+    - name: Настройка модулей для containerd
+      blockinfile:
+        path: /etc/modules-load.d/containerd.conf
+        block: |
+          overlay
+          br_netfilter
+
+    - name: Создание пустого файла для параметров sysctl K8S
+      copy:
+        content: ""
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        force: no
+
+    - name: Настройка параметров sysctl для K8S
+      lineinfile:
+        path: /etc/sysctl.d/99-kubernetes-cri.conf
+        line: "{{ item }}"
+      with_items:
+        - "net.bridge.bridge-nf-call-iptables  = 1"
+        - "net.ipv4.ip_forward                 = 1"
+        - "net.bridge.bridge-nf-call-ip6tables = 1"
+
+    - name: Применение параметров sysctl
+      command: sysctl --system
+
+    - name: Пауза 60 секунд
+      pause:
+        seconds: 60
+
+    - name: Установка APT Transport HTTPS
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Добавление ключа Docker
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker-apt-keyring.asc
+        mode: "0644"
+        force: true
+
+    - name: Добавление репозитория Docker
+      apt_repository:
+        repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker-apt-keyring.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: yes
+
+    - name: Добавление ключа Kubernetes
+      get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+        mode: "0644"
+        force: true
+
+    - name: Добавление репозитория Kubernetes
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
+        state: present
+        update_cache: yes
+
+    - name: Установка containerd
+      apt:
+        name: containerd.io
+        state: present
+
+    - name: Создание директории для containerd
+      file:
+        path: /etc/containerd
+        state: directory
+
+    - name: Добавление конфигурации для containerd
+      shell: /usr/bin/containerd config default > /etc/containerd/config.toml
+
+    - name: Настройка драйвера cgroup для containerd в Systemd
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: "            SystemdCgroup = false"
+        line: "            SystemdCgroup = true"
+
+    - name: Включение и запуск службы containerd
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+        daemon-reload: yes
+
+    - name: Тихая пауза 60 секунд
+      pause:
+        seconds: 60
+
+    - name: Установка Kubelet
+      apt:
+        name: kubelet=1.29.*
+        state: present
+        update_cache: true
+
+    - name: Установка Kubeadm
+      apt:
+        name: kubeadm=1.29.*
+        state: present
+
+    - name: Включение службы Kubelet
+      service:
+        name: kubelet
+        enabled: yes
+
+    - name: Загрузка ядра модуля br_netfilter
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Установка параметра bridge-nf-call-iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+
+    - name: Установка параметра ip_forward
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+
+    - name: Перезагрузка
+      reboot:
+
+- hosts: k8s-master, k8s-app
+  become: yes
+  tasks:
+    - name: Установка Kubectl
+      apt:
+        name: kubectl=1.29.*
+        state: present
+        force: yes
+
+- hosts: k8s-master
+  become: yes
+  tasks:
+    - name: Создание пустого файла для конфигурации Kubeadm
+      copy:
+        content: ""
+        dest: /etc/kubernetes/kubeadm-config.yaml
+        force: no
+
+    - name: Настройка контейнерного окружения
+      blockinfile:
+        path: /etc/kubernetes/kubeadm-config.yaml
+        block: |
+          kind: ClusterConfiguration
+          apiVersion: kubeadm.k8s.io/v1beta3
+          networking:
+            podSubnet: "10.244.0.0/16"
+          ---
+          kind: KubeletConfiguration
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          runtimeRequestTimeout: "15m"
+          cgroupDriver: "systemd"
+          systemReserved:
+            cpu: 100m
+            memory: 350M
+          kubeReserved:
+            cpu: 100m
+            memory: 50M
+          enforceNodeAllocatable:
+          - pods
+
+    - name: Инициализация кластера
+      shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml >> cluster_initialized.log
+      args:
+        chdir: /home/ubuntu
+        creates: cluster_initialized.log
+
+    - name: Создание директории .kube
+      become: yes
+      become_user: ubuntu
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: Копирование admin.conf в конфигурацию пользователя
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+
+    - name: Установка сети подов
+      become: yes
+      become_user: ubuntu
+      shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.log
+      args:
+        chdir: $HOME
+        creates: pod_network_setup.log
+
+- name: Настройка команд для присоединения на мастер-узле
+  hosts: k8s-master
+  become: yes
+  tasks:
+    - name: Получение команды для присоединения
+      shell: kubeadm token create --print-join-command
+      register: join_command_raw
+
+    - name: Установка команды присоединения
+      set_fact:
+        join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+- name: Присоединение рабочих узлов
+  hosts: k8s-app
+  become: yes
+  tasks:
+    - name: Разрешить TCP порт 6443 (на мастере) для подключения с рабочего узла
+      wait_for: "host=<k8s-master ip> port=6443 timeout=1"
+
+    - name: Присоединение рабочего узла к кластеру
+      shell: "{{ hostvars['<k8s-master ip>'].join_command }} >> node_joined.log"
+      args:
+        chdir: /home/ubuntu
+        creates: node_joined.log

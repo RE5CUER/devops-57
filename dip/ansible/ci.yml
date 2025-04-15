@@ -1,0 +1,78 @@
+- name: Установка инструментов CI-CD
+  hosts: srv
+  become: yes
+
+  tasks:
+
+    - name: Добовляю репозиторий GitLab Runner
+      shell: |
+        curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash
+      args:
+        executable: /bin/bash
+
+    - name: Установка GitLab Runner
+      apt:
+        name: gitlab-runner
+        state: present
+        update_cache: yes
+
+    - name: Добовляю ключа Helm
+      shell: |
+        curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+
+    - name: Устанавка apt-transport-https для Helm
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Добовляю репозитория Helm
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+    - name: Обновляю apt cache
+      apt:
+        update_cache: yes
+
+    - name: Установка Helm
+      apt:
+        name: helm
+        state: present
+
+    - name: Установка kubectl через Snap
+      snap:
+        name: kubectl
+        state: present
+        classic: yes
+
+    - name: Проверка версии kubectl
+      command: kubectl version --client
+      register: kubectl_version
+      ignore_errors: yes
+
+    - name: Вывожу версию kubectl
+      debug:
+        msg: "Версия kubectl: {{ kubectl_version.stdout }}"
+
+    - name: Скачиваю GitLab CE пакеты
+      ansible.builtin.get_url:
+        url: https://packages.gitlab.com/gitlab/gitlab-ce/packages/ubuntu/jammy/gitlab-ce_16.2.3-ce.0_amd64.deb/download.deb
+        dest: /tmp/gitlab-ce.deb
+
+    - name: Установка пакет gitlab-ce через dpkg
+      ansible.builtin.command:
+        cmd: dpkg -i /tmp/gitlab-ce.deb
+
+    - name: Установка зависимости для gitlab-ce
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - gitlab-ce
+
+    - name: Запускаю reconfigure для GitLab
+      ansible.builtin.command:
+        cmd: gitlab-ctl reconfigure
+
+    - name: Проверяю статус GitLab
+      ansible.builtin.command:
+        cmd: gitlab-ctl status

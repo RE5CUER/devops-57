@@ -1,0 +1,57 @@
+- name: 
+  hosts: srv
+  become: yes
+  tasks:
+    - name: Обновление списка пакетов
+      apt:
+        update_cache: yes
+
+    - name: Ставлю зависимости
+      apt:
+        name:
+          - curl
+          - wget
+          - gnupg
+          - ufw
+          - software-properties-common
+          - unzip
+        state: present
+
+    - name: Пауза 60 секунд
+      pause:
+        seconds: 60
+
+- name: Ставлю Docker и Docker Compose
+  hosts: srv
+  become: yes
+  tasks:
+    - name: Ставлю Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Ставлю Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-linux-x86_64"
+        dest: "/usr/local/bin/docker-compose"
+        mode: '0755'
+
+    - name: Создаю симлинк для Docker Compose
+      file:
+        src: "/usr/local/bin/docker-compose"
+        dest: "/usr/bin/docker-compose"
+        state: link
+        force: yes
+
+    - name: Добавление пользователя в группу docker
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Перезапуск Docker
+      systemd:
+        name: docker
+        state: restarted
+        enabled: yes
+

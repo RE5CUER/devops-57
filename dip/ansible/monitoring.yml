@@ -1,0 +1,127 @@
+---
+- name: Устанавливаю сервисы мониторинга и логирования
+  hosts: srv
+  become: yes
+  tasks:
+    - name: Создать директории для Loki
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - /srv/loki
+        - /srv/loki-data
+
+    - name: Скачать конфиг Loki
+      get_url:
+        url: "https://raw.githubusercontent.com/grafana/loki/main/cmd/loki/loki-docker-config.yaml"
+        dest: "/srv/loki/loki-config.yaml"
+        mode: '0644'
+
+    - name: Запустить Loki в Docker
+      docker_container:
+        name: loki
+        image: grafana/loki:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "3100:3100"
+        volumes:
+          - "/srv/loki:/etc/loki"
+          - "/srv/loki-data:/data"
+        command: "-config.file=/etc/loki/loki-config.yaml"
+
+    - name: Ставлю Prometheus
+      apt:
+        name: prometheus
+        state: present
+
+    - name: Ставлю Loki
+      get_url:
+        url: "https://github.com/grafana/loki/releases/download/v2.9.2/loki-linux-amd64.zip"
+        dest: "/usr/local/bin/loki.zip"
+
+    - name: Создаю директорию Grafana
+      file:
+        path: /srv/grafana
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0775'
+
+    - name: Запускаю Grafana в Docker
+      docker_container:
+        name: grafana
+        image: grafana/grafana
+        state: started
+        restart_policy: always
+        ports:
+          - "3000:3000"
+        volumes:
+          - "/srv/grafana:/var/lib/grafana"
+        user: "{{ ansible_user_id }}:{{ ansible_user_id }}"
+        env:
+          GF_PATHS_DATA: "/var/lib/grafana"
+          GF_PATHS_CHOWN: "no"
+        healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+          interval: 10s
+          timeout: 5s
+          retries: 3
+
+    - name: Ожидаю доступности Grafana
+      wait_for:
+        port: 3000
+        delay: 10
+        timeout: 60
+
+    - name: Создаю директорию для Alertmanager
+      file:
+        path: /srv/alertmanager
+        state: directory
+        mode: '0755'
+
+    - name: Создаю базовый конфиг Alertmanager
+      copy:
+        dest: /srv/alertmanager/alertmanager.yml
+        content: |
+          global:
+            resolve_timeout: 5m
+          route:
+            receiver: 'null'
+            group_by: ['alertname']
+          receivers:
+          - name: 'null'
+        mode: '0644'
+
+    - name: Запускаю Alertmanager в Docker
+      docker_container:
+        name: alertmanager
+        image: prom/alertmanager:latest
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "9093:9093"
+        volumes:
+          - "/srv/alertmanager:/etc/alertmanager"
+        command:
+          - "--config.file=/etc/alertmanager/alertmanager.yml"
+          - "--storage.path=/alertmanager"
+
+    - name: Пауза 60 секунд
+      pause:
+        seconds: 60
+
+- name: Ставлю Node Exporter
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Пауза 60 секунд
+      pause:
+        seconds: 60
+
+    - name:  Настраиваю Exporter
+      apt:
+        name: prometheus-node-exporter
+        state: present
