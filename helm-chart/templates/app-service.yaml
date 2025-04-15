@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+spec:
+  type: NodePort
+  ports:
+    - port: 3003
+      targetPort: 3003
+      nodePort: 30100
+      name: plaintext
+  selector:
+    app: app

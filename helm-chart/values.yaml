@@ -1,0 +1,14 @@
+postgres:
+  image: postgres:13-alpine
+  POSTGRES_PASSWORD: password
+  POSTGRES_DB: tutorial-dev
+  POSTGRES_USER: vinhle
+
+app:
+  port: 3003
+  image: re5cuer/django-pg-docker-tutorial:latest
+  environment:
+    DB_HOST: db
+    DB_NAME: tutorial-dev
+    DB_USER: vinhle
+    DB_PASS: password
