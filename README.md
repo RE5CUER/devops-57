@@ -17,14 +17,16 @@ ansible [core 2.16.3]
 curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
 yc init
 
-Авторизоваться через браузер (выдаст ссылку — открой её и подтверди).
+Авторизоваться через браузер по представленной ссылке
 Выбрать каталог (folder) и облако (cloud).
 Установить зону доступности по умолчанию (например, ru-central1-a).
 
 После авторизации получим данные для провайдера терраформ по команде
+
 cat ~/.config/yandex-cloud/config.yaml
 
 Где:
+
 oauth_token: <you_token>
 cloud_id: <you_cloud_id>
 folder_id: <you_folder_id>
@@ -46,9 +48,9 @@ provider_installation {
 
 Создадим ssh ключ для работы с ансибл
 
-cat /home/grid/.ssh/id_rsa.pub
-SHA256
-ssh-rsa AAAAB3NzaC1yc2EAAA
+ssh-keygen -t rsa -b 4096 -f /root/.ssh/id_rsa
+cat /root/.ssh/id_rsa.pub
+
 
 ## Шаг 2 Деплой
 
