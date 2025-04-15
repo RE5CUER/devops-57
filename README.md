@@ -22,9 +22,9 @@ yc init
 Установить зону доступности по умолчанию (например, ru-central1-a).  
 
 После авторизации получим данные для провайдера терраформ по команде  
-
+```bash
 cat ~/.config/yandex-cloud/config.yaml  
-
+```
 Где:
 
 oauth_token: <you_token>  
@@ -33,9 +33,10 @@ folder_id: <you_folder_id>
 zone: Ваша зона по умолчанию
 
 Для дальнейшей работы с терраформ в РФ установим зеркало  
-
+```bash
 nano ~/.terraformrc  
-
+```
+```bash
 provider_installation {
   network_mirror {
     url     = "https://terraform-mirror.yandexcloud.net/"
@@ -45,12 +46,12 @@ provider_installation {
     exclude = ["registry.terraform.io/*/*"]
   }
 }
-
+```
 Создадим ssh ключ для работы с ансибл  
-
+```bash
 ssh-keygen -t rsa -b 4096 -f /root/.ssh/id_rsa  
 cat /root/.ssh/id_rsa.pub  
-
+```
 
 ## Шаг 2 Деплой
 
