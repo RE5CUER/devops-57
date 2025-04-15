@@ -58,10 +58,11 @@ cat /root/.ssh/id_rsa.pub
 Скачиваем проект с GitHub https://github.com/RE5CUER/devops-57.git  
 Переходим в папку dip/terraform  
 запускаем  
- 
+
+```bash
 terraform plan  
 terraform apply  
-
+```
 После окончания деплоя будут выведены в консоль внешние ip адреса виртуальных машин, а также эти данные появятся в файле dip/ansible/inventory.nano  
 
 ![image](https://github.com/user-attachments/assets/52be9126-614b-4c15-8a48-401cd06f0a21)  
@@ -120,42 +121,46 @@ cat ~/.kube/config
 Содержимое переносим на srv  
 Подключаемся к srv  
 ssh ubuntu@<srv>  
-
+```bash
 mkdir -p ~/.kube  
 nano ~/.kube/config  
-
+```
 проверим
-
+```bash
 kubectl get nodes  
-
+```
 В качестве докер регистра я выбрал docker-hub  
 Для этого необходимо зарегестрироваться в docker-hub и создать секрет  
 
 создаём секрет для авторизации на docker-hub  
-
+```bash
 kubectl create secret docker-registry regcred \  
   --docker-server=https://hub.docker.com/ \  
   --docker-username=<you_docker-hub_login> \  
   --docker-password=<you_dockerhub_password> \  
   --docker-email=<you_email>  
+```
 
 ## Шаг 4 Настройка GitLab
 
 Конфигурируем gitlab на внешний ip srv  
-
+```bash
 sudo sed -i "s|^external_url .*|external_url 'http://51.250.81.129'|" /etc/gitlab/gitlab.rb  
 sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-ctl status  
-
+```
 При первой настройке пароль от GitLab можно посмотреть вот тут:  
+```bash
 sudo nano /etc/gitlab/initial_root_password  
-
+```
 Авторизуемся под root, при желании меняем пароль на свой  
 
 Клонируем репозиторий с django приложением к себе в гитлаб  
 
 cd /папка для проекта  
+```bash
 git clone https://github.com/vinhlee95/django-pg-docker-tutorial.git  
-cd django-pg-docker-tutorial  
+cd django-pg-docker-tutorial
+```
 Удаляем старую привязку к GitHub (опционально)  
 git remote remove origin  
 git remote add origin http:/<srv_ip>/путь до проекта/django-pg-docker-tutorial.git  
@@ -166,9 +171,9 @@ git push --tags origin
 ## Шаг 5 Настраиваем GitLab-runner
 
 Зарегестрируем наш runner в GitLab  
-
+```bash
 sudo gitlab-runner register  
-
+```
 http://<srv_ip>  
 Вводи токен регистрации Ранера   
 (Токен можно получить в GitLab Admin area > CI/CD > Runners > три точки в правом углу)  
@@ -178,24 +183,24 @@ shell
 shell  
 
 Проверяем конфигурационный файл  
-
+```bash
 sudo cat /etc/gitlab-runner/config.toml  
-
+```
 Запускаем ранер  
 sudo gitlab-runner start  
 
 Назначаем права для работы c GitLab  
-
+```bash
 usermod -aG docker ubuntu  
 usermod -aG docker root  
 usermod -aG docker gitlab-runner  
-
+```
 Скопируем конфигурации кластера в gitlab-runner  
-
+```bash
 sudo cp /root/.kube/config /home/gitlab-runner/.kube/config  
 sudo chown gitlab-runner:gitlab-runner /home/gitlab-runner/.kube/config  
 sudo chmod 644 /home/gitlab-runner/.kube/config  
-
+```
 Настраиваем переменные в GitLab  
 
 Далее настраиваю переменные в ГИТЛАБ для логина в Docker HUB  
@@ -207,10 +212,10 @@ Settings > CI/CD > Variables
 
 
 Перезапускаем докер и гитлаб  
-
+```bash
 sudo systemctl restart docker  
 sudo gitlab-runner restart  
-
+```
 Проверяем подключение gitlab-runner  
 Admin area > CI/CD > Runner  
 ![image](https://github.com/user-attachments/assets/9a341d89-b126-4e30-9644-f38b94bc4d22)  
