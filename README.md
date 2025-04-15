@@ -13,9 +13,10 @@ ansible [core 2.16.3]
 Для работы с terraform понадобится создать токен авторизации в yandex.cloud  
 
 Установим Yandex Cloud CLI  
+```bash
 curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash  
 yc init  
-
+```
 Авторизоваться через браузер по представленной ссылке  
 Выбрать каталог (folder) и облако (cloud).  
 Установить зону доступности по умолчанию (например, ru-central1-a).  
